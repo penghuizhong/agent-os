@@ -6,7 +6,7 @@ import Badge from '@/components/ui/Badge.vue'
 import Card from '@/components/ui/Card.vue'
 import Button from '@/components/ui/Button.vue'
 
-const { state, stats } = useAppStore()
+const { state, stats, heroBanner } = useAppStore()
 
 const statIcons = { users: Users, check: CheckCircle2, alert: AlertCircle }
 
@@ -28,11 +28,11 @@ const statusConfig = {
       </div>
 
       <!-- Hero Banner -->
-      <div class="relative mb-5 h-32 overflow-hidden rounded-xl">
+      <div class="group relative mb-5 h-32 overflow-hidden rounded-xl cursor-pointer">
         <img
-          src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=mountain%20landscape%20at%20sunrise%20with%20golden%20light%20over%20misty%20peaks%20minimal%20atmospheric%20photography&image_size=landscape_16_9"
+          :src="heroBanner"
           alt="Morning landscape"
-          class="h-full w-full object-cover"
+          class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
         />
         <div class="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
         <div class="absolute bottom-3 left-4">
@@ -91,6 +91,29 @@ const statusConfig = {
             <Badge v-for="tag in activity.tags" :key="tag" variant="outline">{{ tag }}</Badge>
           </div>
 
+          <!-- Trend Cards with Images -->
+          <div v-if="activity.trendCards" class="mt-3 grid grid-cols-3 gap-3">
+            <div
+              v-for="trend in activity.trendCards"
+              :key="trend.index"
+              class="group overflow-hidden rounded-lg border border-border bg-card cursor-pointer transition-all hover:border-primary/40"
+            >
+              <div class="relative aspect-[4/3] overflow-hidden">
+                <img
+                  :src="trend.image"
+                  :alt="trend.title"
+                  class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-125"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                <span class="absolute top-2 left-2 text-[10px] font-bold text-white/80">{{ trend.index }}</span>
+              </div>
+              <div class="p-2.5">
+                <div class="text-xs font-medium text-foreground">{{ trend.title }}</div>
+                <div class="mt-0.5 text-[10px] text-muted-foreground">{{ trend.description }}</div>
+              </div>
+            </div>
+          </div>
+
           <!-- Metrics -->
           <div v-if="activity.metrics" class="mt-3 flex gap-4 border-t border-border pt-3">
             <div v-for="metric in activity.metrics" :key="metric.label">
@@ -101,31 +124,39 @@ const statusConfig = {
             </div>
           </div>
 
-          <!-- Decision Options -->
+          <!-- Decision Options with Images -->
           <div v-if="activity.options" class="mt-3 grid grid-cols-2 gap-3">
             <button
               v-for="(option, idx) in activity.options"
               :key="idx"
-              class="rounded-lg border border-border p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent/50"
+              class="group overflow-hidden rounded-lg border border-border text-left transition-all hover:border-primary/40 hover:bg-accent/50"
             >
-              <div class="flex items-center gap-2">
-                <div class="flex h-5 w-5 items-center justify-center rounded-full border-2 border-muted-foreground text-[10px] font-bold">
+              <div v-if="option.image" class="relative aspect-[4/3] overflow-hidden">
+                <img
+                  :src="option.image"
+                  :alt="option.label"
+                  class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-125"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div class="absolute top-2 left-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-[10px] font-bold text-white border border-white/20">
                   {{ String.fromCharCode(65 + idx) }}
                 </div>
-                <span class="text-sm font-medium text-foreground">{{ option.label.split(': ')[1] }}</span>
               </div>
-              <p class="mt-1.5 text-xs text-muted-foreground">{{ option.description }}</p>
+              <div class="p-3">
+                <span class="text-sm font-medium text-foreground">{{ option.label.split(': ')[1] }}</span>
+                <p class="mt-1 text-xs text-muted-foreground">{{ option.description }}</p>
+              </div>
             </button>
           </div>
 
           <!-- Action Buttons -->
           <div v-if="activity.status === 'needs_decision'" class="mt-3 flex gap-2">
-            <Button size="sm" variant="outline">选择 A</Button>
+            <Button size="sm" variant="gradient">选择 A</Button>
             <Button size="sm" variant="outline">选择 B</Button>
             <Button size="sm" variant="ghost">讨论一下</Button>
           </div>
           <div v-else class="mt-3">
-            <button class="text-xs text-primary hover:underline">查看详情 →</button>
+            <button class="text-xs text-primary hover:underline">查看报告 →</button>
           </div>
         </Card>
       </div>

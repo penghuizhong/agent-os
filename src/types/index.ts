@@ -15,6 +15,13 @@ export interface Agent {
 export type ActivityType = 'completed' | 'decision' | 'progress' | 'info'
 export type ActivityStatus = 'completed' | 'needs_decision' | 'in_progress'
 
+export interface TrendCard {
+  index: string
+  title: string
+  description: string
+  image: string
+}
+
 export interface Activity {
   id: string
   agentId: string
@@ -27,7 +34,8 @@ export interface Activity {
   description?: string
   tags?: string[]
   metrics?: { label: string; value: string; positive?: boolean }[]
-  options?: { label: string; description: string; selected?: boolean }[]
+  options?: { label: string; description: string; image?: string; selected?: boolean }[]
+  trendCards?: TrendCard[]
 }
 
 export interface Project {

@@ -1,5 +1,11 @@
 import { reactive, ref, computed } from 'vue'
 import type { Agent, Activity, Project, ChatMessage } from '@/types'
+import trend01 from '@/assets/trend-01.jpg'
+import trend02 from '@/assets/trend-02.jpg'
+import trend03 from '@/assets/trend-03.jpg'
+import optionA from '@/assets/option-a.jpg'
+import optionB from '@/assets/option-b.jpg'
+import heroBanner from '@/assets/hero-banner.jpg'
 
 const agents: Agent[] = [
   {
@@ -97,12 +103,32 @@ const activities: Activity[] = [
     status: 'completed',
     type: 'completed',
     title: '2027 春夏女装趋势分析报告',
-    description: '已完成 2027 春夏女装趋势深度分析，识别出三个核心方向',
+    description: '分析了 328 个全球品牌、47 场时装秀与最新市场数据，提取出 3 个核心趋势方向',
     tags: ['轻量化结构', '低饱和度金属色', '运动通勤融合'],
     metrics: [
       { label: '设计概念', value: '18' },
       { label: '色彩方案', value: '6' },
       { label: '廓形方向', value: '12' },
+    ],
+    trendCards: [
+      {
+        index: '01',
+        title: '轻量化结构',
+        description: '结构更柔和，强调流动感',
+        image: trend01,
+      },
+      {
+        index: '02',
+        title: '低饱和度金属色',
+        description: '柔和的金属光泽，未来感',
+        image: trend02,
+      },
+      {
+        index: '03',
+        title: '运动与通勤融合',
+        description: '功能性与优雅的结合',
+        image: trend03,
+      },
     ],
   },
   {
@@ -116,8 +142,16 @@ const activities: Activity[] = [
     title: '设计方向选择',
     description: '基于趋势分析，提出两个设计方向，请选择或讨论',
     options: [
-      { label: '方案 A: 极简奢华', description: '以简约线条和高级面料为核心，强调品质感与永恒性' },
-      { label: '方案 B: 未来主义', description: '融合科技元素与创新材料，打造前卫先锋的视觉体验' },
+      {
+        label: '方案 A: 极简奢华',
+        description: '简约线条，高级质感，经典永恒',
+        image: optionA,
+      },
+      {
+        label: '方案 B: 未来主义',
+        description: '科技面料，创新廓形，前卫风格',
+        image: optionB,
+      },
     ],
   },
   {
@@ -283,6 +317,7 @@ export function useAppStore() {
     selectedAgent,
     activeAgents,
     stats,
+    heroBanner,
     selectAgent,
     closeProfileCard,
     toggleProfileFullscreen,
