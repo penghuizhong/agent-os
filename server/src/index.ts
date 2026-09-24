@@ -1,129 +1,243 @@
-import express from 'express'
-import cors from 'cors'
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { authMiddleware, getAuthUser, authService } from './auth';
+import { PiBrain } from './pi-brain';
+import type { Env } from './types';
 
-const app = express()
-const PORT = 3001
+const app = new Hono<{ Bindings: Env }>();
 
-app.use(cors())
-app.use(express.json())
+// CORS middleware
+app.use('*', (c, next) => {
+  const corsOrigins = c.env.CORS_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:5175', 'http://127.0.0.1:5173'];
+  return cors({
+    origin: corsOrigins,
+    allowHeaders: ['Authorization', 'Content-Type'],
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    exposeHeaders: ['Content-Length'],
+    maxAge: 600,
+    credentials: true,
+  })(c, next);
+});
 
-interface ChatRequest {
-  agentId: string
-  message: string
-}
+// Health check (no auth)
+app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: Date.now() }));
 
-interface AgentConfig {
-  name: string
-  systemPrompt: string
-}
+// Auth middleware - skip for public routes (health, login, register)
+app.use('/api/*', async (c, next) => {
+  const path = c.req.path;
+  // Public routes that don't need authentication
+  if (path === '/api/health' || path === '/api/auth/login' || path === '/api/auth/register') {
+    return next();
+  }
+  return authMiddleware()(c, next);
+});
 
-const agentConfigs: Record<string, AgentConfig> = {
-  '1': {
-    name: 'Fashion Director',
-    systemPrompt: '你是一位高级服装设计总监，专注于服装设计方向决策与趋势分析。请用专业且简洁的中文回答。',
-  },
-  '2': {
-    name: 'Trend Researcher',
-    systemPrompt: '你是一位时尚趋势研究员，专注于分析时尚趋势与市场动向。请用专业且简洁的中文回答。',
-  },
-  '3': {
-    name: 'Design Creator',
-    systemPrompt: '你是一位创意设计师，负责生成设计方案与视觉创意。请用专业且简洁的中文回答。',
-  },
-  '4': {
-    name: 'Marketing Specialist',
-    systemPrompt: '你是一位营销专家，负责制定营销策略与推广方案。请用专业且简洁的中文回答。',
-  },
-  '5': {
-    name: 'Developer',
-    systemPrompt: '你是一位开发工程师，负责AI工作台性能优化与功能开发。请用专业且简洁的中文回答。',
-  },
-  '6': {
-    name: 'Market Analyst',
-    systemPrompt: '你是一位市场分析师，负责市场数据分析与竞品研究。请用专业且简洁的中文回答。',
-  },
-  '7': {
-    name: 'Content Creator',
-    systemPrompt: '你是一位内容创作者，负责内容策划与文案撰写。请用专业且简洁的中文回答。',
-  },
-}
+// ============ Auth routes ============
 
-let piSession: any = null
-let piAvailable = false
-
-async function initPi() {
+app.post('/api/auth/register', async (c) => {
   try {
-    const pi = await import('@earendil-works/pi-coding-agent')
-    const { createAgentSession, ModelRuntime, SessionManager } = pi as any
-    const modelRuntime = await ModelRuntime.create()
-    const result = await createAgentSession({
-      sessionManager: SessionManager.inMemory(),
-      modelRuntime,
-    })
-    piSession = result.session
-    piAvailable = true
-    console.log('[pi] Agent session initialized successfully')
-  } catch (err) {
-    console.log('[pi] Not available, using mock responses')
-    console.log('[pi] To enable real AI, install: npm install @earendil-works/pi-coding-agent')
-    console.log('[pi] And set ANTHROPIC_API_KEY or OPENAI_API_KEY')
-  }
-}
+    const body = await c.req.json();
+    const result = await authService.register(c.env.DB, {
+      username: body.username,
+      password: body.password,
+      email: body.email,
+      avatar: body.avatar,
+    }, c.env);
 
-async function getPiResponse(message: string, systemPrompt: string): Promise<string> {
-  if (!piSession || !piAvailable) {
-    throw new Error('pi not available')
-  }
-  const fullPrompt = `${systemPrompt}\n\n用户消息: ${message}`
-  const response = await piSession.prompt(fullPrompt)
-  return typeof response === 'string' ? response : String(response ?? '')
-}
-
-function getMockResponse(agentId: string, message: string): string {
-  const config = agentConfigs[agentId] ?? agentConfigs['1']
-  const responses = [
-    `收到。作为${config.name}，我来分析你的需求："${message}"\n\n基于当前项目上下文，我建议从以下几个维度展开：\n1. 趋势研究 - 结合 2027 春夏最新流行数据\n2. 方案设计 - 提供不少于 3 个创意方向\n3. 落地执行 - 明确时间节点与交付物\n\n预计需要 10-15 分钟完成，是否开始执行？`,
-    `我已经理解你的要求。正在处理中...\n\n根据你的描述"${message}"，我会：\n- 梳理相关资料与历史记忆\n- 生成结构化方案\n- 提供可视化结果\n\n完成后会第一时间通知你查看。`,
-    `好的，我来深化这个方向。\n\n关于"${message}"，我认为可以从以下几点入手：\n1. 核心概念梳理\n2. 视觉风格定义\n3. 材质与工艺建议\n4. 商业可行性评估\n\n我已开始工作，请稍候。`,
-  ]
-  return responses[Math.floor(Math.random() * responses.length)]
-}
-
-app.post('/api/chat', async (req, res) => {
-  const { agentId, message } = req.body as ChatRequest
-  if (!message?.trim()) {
-    return res.status(400).json({ error: 'Message is required' })
-  }
-
-  const config = agentConfigs[agentId] ?? agentConfigs['1']
-
-  try {
-    let reply: string
-    if (piAvailable) {
-      reply = await getPiResponse(message, config.systemPrompt)
-    } else {
-      await new Promise(r => setTimeout(r, 800 + Math.random() * 1200))
-      reply = getMockResponse(agentId, message)
+    if (!result.success) {
+      return c.json({ error: result.error }, 400);
     }
-    res.json({ reply, agent: config.name })
-  } catch (err) {
-    const reply = getMockResponse(agentId, message)
-    res.json({ reply, agent: config.name, fallback: true })
+    return c.json(result, 201);
+  } catch (error: any) {
+    return c.json({ error: error.message || '注册失败' }, 400);
   }
-})
+});
 
-app.get('/api/health', (_req, res) => {
-  res.json({
-    status: 'ok',
-    pi: piAvailable ? 'connected' : 'mock',
-    agents: Object.keys(agentConfigs).length,
-  })
-})
+app.post('/api/auth/login', async (c) => {
+  try {
+    const body = await c.req.json();
+    const result = await authService.login(c.env.DB, {
+      username: body.username,
+      password: body.password,
+    }, c.env);
 
-initPi().then(() => {
-  app.listen(PORT, () => {
-    console.log(`\n[NEXUS AI] Backend running at http://localhost:${PORT}`)
-    console.log(`[NEXUS AI] Pi status: ${piAvailable ? '✅ Connected' : '⚠️  Mock mode'}`)
-    console.log(`[NEXUS AI] Frontend: http://localhost:5173\n`)
-  })
-})
+    if (!result.success) {
+      return c.json({ error: result.error }, 401);
+    }
+    return c.json(result);
+  } catch (error: any) {
+    return c.json({ error: error.message || '登录失败' }, 401);
+  }
+});
+
+app.get('/api/auth/me', async (c) => {
+  const authUser = getAuthUser(c);
+  if (!authUser) return c.json({ error: '未认证' }, 401);
+  const user = await authService.getCurrentUser(c.env.DB, authUser.userId);
+  if (!user) return c.json({ error: '用户不存在' }, 404);
+  return c.json(user);
+});
+
+// ============ Agent routes ============
+
+app.get('/api/agents', async (c) => {
+  const authUser = getAuthUser(c)!;
+  const brain = new PiBrain(c.env.DB, c.env);
+  await brain.init();
+  const agents = await brain.getUserAgents(authUser.userId);
+  return c.json(agents);
+});
+
+app.post('/api/agents', async (c) => {
+  try {
+    const authUser = getAuthUser(c)!;
+    const body = await c.req.json();
+    const { name, role, description, avatar, tags } = body;
+    if (!name || !role) {
+      return c.json({ error: 'Name and role are required' }, 400);
+    }
+    const brain = new PiBrain(c.env.DB, c.env);
+    await brain.init();
+    const agent = await brain.createAgent(
+      authUser.userId,
+      name,
+      role,
+      description || '',
+      avatar || name[0]?.toUpperCase() || 'A',
+      tags || [],
+    );
+    return c.json(agent, 201);
+  } catch (error: any) {
+    return c.json({ error: error.message }, 400);
+  }
+});
+
+app.delete('/api/agents/:id', async (c) => {
+  const authUser = getAuthUser(c)!;
+  const agentId = c.req.param('id');
+  const brain = new PiBrain(c.env.DB, c.env);
+  await brain.init();
+  const agent = await brain.getAgent(agentId, authUser.userId);
+  if (!agent) return c.json({ error: 'Agent not found' }, 404);
+  await brain.deleteAgent(authUser.userId, agentId);
+  return c.json({ success: true });
+});
+
+// ============ History routes ============
+
+app.get('/api/agents/:id/history', async (c) => {
+  const authUser = getAuthUser(c)!;
+  const agentId = c.req.param('id');
+  const limit = parseInt(c.req.query('limit') || '50');
+
+  const brain = new PiBrain(c.env.DB, c.env);
+  await brain.init();
+  const agent = await brain.getAgent(agentId, authUser.userId);
+  if (!agent) return c.json({ error: 'Agent not found' }, 404);
+
+  const messages = await brain.getHistory(agentId, authUser.userId, limit);
+  return c.json(messages);
+});
+
+app.delete('/api/agents/:id/history', async (c) => {
+  const authUser = getAuthUser(c)!;
+  const agentId = c.req.param('id');
+
+  const brain = new PiBrain(c.env.DB, c.env);
+  await brain.init();
+  const agent = await brain.getAgent(agentId, authUser.userId);
+  if (!agent) return c.json({ error: 'Agent not found' }, 404);
+
+  await brain.clearHistory(authUser.userId, agentId);
+  return c.json({ success: true });
+});
+
+// ============ Memory routes ============
+
+app.get('/api/agents/:id/memories', async (c) => {
+  const authUser = getAuthUser(c)!;
+  const agentId = c.req.param('id');
+
+  const brain = new PiBrain(c.env.DB, c.env);
+  await brain.init();
+  const agent = await brain.getAgent(agentId, authUser.userId);
+  if (!agent) return c.json({ error: 'Agent not found' }, 404);
+
+  const memories = await brain.getMemories(agentId, authUser.userId);
+  return c.json(memories);
+});
+
+// ============ Chat route (SSE via ReadableStream) ============
+
+app.post('/api/chat', async (c) => {
+  const authUser = getAuthUser(c)!;
+  const { agentId, message } = await c.req.json();
+
+  if (!agentId || !message) {
+    return c.json({ error: 'agentId and message are required' }, 400);
+  }
+
+  const brain = new PiBrain(c.env.DB, c.env);
+  await brain.init();
+
+  // Verify agent ownership
+  const agent = await brain.getAgent(agentId, authUser.userId);
+  if (!agent) {
+    return c.json({ error: 'Agent not found' }, 404);
+  }
+
+  if (!brain.isAvailable()) {
+    return c.json({ error: 'AI service not available' }, 503);
+  }
+
+  // Create a ReadableStream for SSE
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (event: string, data: any) => {
+        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+      };
+
+      try {
+        // prompt() handles saving user message, streaming, saving assistant response, and memory extraction
+        const fullText = await brain.prompt(
+          authUser.userId,
+          agentId,
+          message,
+          (delta: string) => {
+            send('chunk', { text: delta });
+          },
+        );
+
+        // Send done event
+        send('done', { agentId, text: fullText });
+      } catch (error: any) {
+        send('error', { message: error.message || 'Internal server error' });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
+});
+
+// ============ Error handler ============
+
+app.onError((err, c) => {
+  console.error('Unhandled error:', err);
+  return c.json({ error: 'Internal server error' }, 500);
+});
+
+// 404 handler
+app.notFound((c) => {
+  return c.json({ error: 'Not found' }, 404);
+});
+
+export default app;

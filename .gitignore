@@ -8,3 +8,9 @@ dist-ssr
 !.env.example
 *.log
 .vite
+.wrangler
+data/
+server/data/
+server/.env
+server/node_modules/
+server/dist/

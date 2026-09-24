@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import {
   Sparkles, Home, Bot, Folder, Plus, Settings, ChevronDown,
   User, CreditCard, LogOut, Bell,
@@ -9,7 +9,11 @@ import { formatTimeAgo } from '@/lib/utils'
 import Avatar from '@/components/ui/Avatar.vue'
 import Badge from '@/components/ui/Badge.vue'
 
-const { state, selectAgent, setNav } = useAppStore()
+const emit = defineEmits<{
+  logout: []
+}>()
+
+const { state, selectAgent, setNav, openCreateAgent } = useAppStore()
 
 const navItems = [
   { id: 'today' as const, label: 'Today', icon: Home, badge: 7 },
@@ -21,6 +25,8 @@ const statusConfig = {
   working: { dot: 'bg-success', text: 'Working' },
   waiting: { dot: 'bg-warning', text: 'Waiting' },
   offline: { dot: 'bg-danger', text: 'Offline' },
+  idle: { dot: 'bg-muted-foreground', text: 'Idle' },
+  thinking: { dot: 'bg-primary', text: 'Thinking' },
 }
 
 const menuOpen = ref(false)
@@ -33,6 +39,10 @@ const menuItems = [
   { label: '设置', icon: Settings, desc: '偏好与账户' },
 ]
 
+// 当前用户名
+const displayName = computed(() => state.currentUser?.username || 'User')
+const displayAvatar = computed(() => displayName.value[0].toUpperCase())
+
 function toggleMenu() {
   menuOpen.value = !menuOpen.value
 }
@@ -41,6 +51,11 @@ function closeMenu(e: MouseEvent) {
   if (menuRef.value && !menuRef.value.contains(e.target as Node)) {
     menuOpen.value = false
   }
+}
+
+function handleLogout() {
+  menuOpen.value = false
+  emit('logout')
 }
 
 onMounted(() => document.addEventListener('click', closeMenu))
@@ -82,6 +97,7 @@ onUnmounted(() => document.removeEventListener('click', closeMenu))
     <!-- Create Agent Button -->
     <div class="px-3 pt-3">
       <button
+        @click="openCreateAgent"
         class="flex w-full items-center justify-center gap-2 rounded-lg gradient-bg px-3 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 glow"
       >
         <Plus class="h-4 w-4" />
@@ -158,12 +174,12 @@ onUnmounted(() => document.removeEventListener('click', closeMenu))
         <!-- Avatar with gradient ring -->
         <div class="relative">
           <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-purple-500 text-xs font-bold text-white">
-            L
+            {{ displayAvatar }}
           </div>
           <span class="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-sidebar bg-success" />
         </div>
         <div class="flex flex-1 flex-col leading-tight">
-          <span class="text-xs font-semibold text-foreground">Lucas Chen</span>
+          <span class="text-xs font-semibold text-foreground">{{ displayName }}</span>
           <span class="text-[10px] text-muted-foreground">Pro 会员 · 在线</span>
         </div>
         <ChevronDown
@@ -210,7 +226,7 @@ onUnmounted(() => document.removeEventListener('click', closeMenu))
           <!-- Logout -->
           <div class="py-1.5">
             <button
-              @click="menuOpen = false"
+              @click="handleLogout"
               class="flex w-full items-center gap-3 px-3 py-2 hover:bg-accent transition-colors text-left group"
             >
               <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-secondary group-hover:bg-danger/10 transition-colors">

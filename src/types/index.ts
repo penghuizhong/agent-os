@@ -1,4 +1,4 @@
-export type AgentStatus = 'working' | 'waiting' | 'offline'
+export type AgentStatus = 'working' | 'waiting' | 'offline' | 'idle' | 'thinking'
 
 export interface Agent {
   id: string
@@ -51,6 +51,9 @@ export interface ChatMessage {
   content: string
   timestamp: Date
   agentId?: string
+  streaming?: boolean
+  thinking?: string
+  thinkingDone?: boolean
   checklist?: { label: string; done: boolean }[]
   attachments?: { type: 'image' | 'link'; content: string; label?: string }[]
 }

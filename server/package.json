@@ -1,0 +1,24 @@
+{
+  "name": "nexus-ai-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute nexus-db --file=./schema.sql",
+    "db:migrate:local": "wrangler d1 execute nexus-db --local --file=./schema.sql"
+  },
+  "dependencies": {
+    "@earendil-works/pi-ai": "^0.87.0",
+    "bcryptjs": "^3.0.2",
+    "hono": "^4.7.0",
+    "jose": "^6.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250204.0",
+    "@types/bcryptjs": "^2.4.6",
+    "typescript": "~5.7.0",
+    "wrangler": "^3.107.0"
+  }
+}

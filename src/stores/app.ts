@@ -1,4 +1,4 @@
-import { reactive, ref, computed } from 'vue'
+import { reactive, computed } from 'vue'
 import type { Agent, Activity, Project, ChatMessage } from '@/types'
 import trend01 from '@/assets/trend-01.jpg'
 import trend02 from '@/assets/trend-02.jpg'
@@ -6,86 +6,6 @@ import trend03 from '@/assets/trend-03.jpg'
 import optionA from '@/assets/option-a.jpg'
 import optionB from '@/assets/option-b.jpg'
 import heroBanner from '@/assets/hero-banner.jpg'
-
-const agents: Agent[] = [
-  {
-    id: '1',
-    name: 'Fashion Director',
-    role: '你的高级服装设计总监',
-    description: '负责服装设计方向决策与趋势分析',
-    avatar: 'FD',
-    status: 'working',
-    lastActive: new Date(Date.now() - 12 * 60 * 1000),
-    tags: ['Trend', 'Design', 'Collection'],
-    color: '#a855f7',
-  },
-  {
-    id: '2',
-    name: 'Trend Researcher',
-    role: '趋势研究员',
-    description: '分析时尚趋势与市场动向',
-    avatar: 'TR',
-    status: 'working',
-    lastActive: new Date(Date.now() - 25 * 60 * 1000),
-    tags: ['Trend', 'Research'],
-    color: '#3b82f6',
-  },
-  {
-    id: '3',
-    name: 'Design Creator',
-    role: '设计师',
-    description: '生成设计方案与视觉创意',
-    avatar: 'DC',
-    status: 'working',
-    lastActive: new Date(Date.now() - 32 * 60 * 1000),
-    tags: ['Design', 'Creative'],
-    color: '#ec4899',
-  },
-  {
-    id: '4',
-    name: 'Marketing Specialist',
-    role: '营销专家',
-    description: '制定营销策略与推广方案',
-    avatar: 'MS',
-    status: 'waiting',
-    lastActive: new Date(Date.now() - 60 * 60 * 1000),
-    tags: ['Marketing', 'Strategy'],
-    color: '#f59e0b',
-  },
-  {
-    id: '5',
-    name: 'Developer',
-    role: '开发工程师',
-    description: 'AI 工作台性能优化与功能开发',
-    avatar: 'DV',
-    status: 'working',
-    lastActive: new Date(Date.now() - 60 * 60 * 1000),
-    tags: ['Code', 'Performance'],
-    color: '#22c55e',
-  },
-  {
-    id: '6',
-    name: 'Market Analyst',
-    role: '市场分析师',
-    description: '市场数据分析与竞品研究',
-    avatar: 'MA',
-    status: 'working',
-    lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    tags: ['Analysis', 'Market'],
-    color: '#06b6d4',
-  },
-  {
-    id: '7',
-    name: 'Content Creator',
-    role: '内容创作者',
-    description: '内容策划与文案撰写',
-    avatar: 'CC',
-    status: 'offline',
-    lastActive: new Date(Date.now() - 3 * 60 * 60 * 1000),
-    tags: ['Content', 'Copy'],
-    color: '#8b5cf6',
-  },
-]
 
 const projects: Project[] = [
   { id: '1', name: '2027 春夏女装系列', lastModified: new Date(Date.now() - 2 * 60 * 60 * 1000), icon: '👗' },
@@ -111,24 +31,9 @@ const activities: Activity[] = [
       { label: '廓形方向', value: '12' },
     ],
     trendCards: [
-      {
-        index: '01',
-        title: '轻量化结构',
-        description: '结构更柔和，强调流动感',
-        image: trend01,
-      },
-      {
-        index: '02',
-        title: '低饱和度金属色',
-        description: '柔和的金属光泽，未来感',
-        image: trend02,
-      },
-      {
-        index: '03',
-        title: '运动与通勤融合',
-        description: '功能性与优雅的结合',
-        image: trend03,
-      },
+      { index: '01', title: '轻量化结构', description: '结构更柔和，强调流动感', image: trend01 },
+      { index: '02', title: '低饱和度金属色', description: '柔和的金属光泽，未来感', image: trend02 },
+      { index: '03', title: '运动与通勤融合', description: '功能性与优雅的结合', image: trend03 },
     ],
   },
   {
@@ -142,16 +47,8 @@ const activities: Activity[] = [
     title: '设计方向选择',
     description: '基于趋势分析，提出两个设计方向，请选择或讨论',
     options: [
-      {
-        label: '方案 A: 极简奢华',
-        description: '简约线条，高级质感，经典永恒',
-        image: optionA,
-      },
-      {
-        label: '方案 B: 未来主义',
-        description: '科技面料，创新廓形，前卫风格',
-        image: optionB,
-      },
+      { label: '方案 A: 极简奢华', description: '简约线条，高级质感，经典永恒', image: optionA },
+      { label: '方案 B: 未来主义', description: '科技面料，创新廓形，前卫风格', image: optionB },
     ],
   },
   {
@@ -184,49 +81,20 @@ const activities: Activity[] = [
   },
 ]
 
-const chatMessages: ChatMessage[] = [
-  {
-    id: '1',
-    role: 'user',
-    content: '继续深化那三个方向',
-    timestamp: new Date(Date.now() - 30 * 60 * 1000),
-  },
-  {
-    id: '2',
-    role: 'agent',
-    agentId: '1',
-    content: '好的，我将深化以下三个方向的设计方案，预计需要 15 分钟完成。',
-    timestamp: new Date(Date.now() - 29 * 60 * 1000),
-    checklist: [
-      { label: '廓形设计', done: true },
-      { label: '面料选择', done: true },
-      { label: '色彩搭配', done: true },
-      { label: '产品定位', done: false },
-    ],
-  },
-  {
-    id: '3',
-    role: 'agent',
-    agentId: '1',
-    content: '2027 春夏系列方向深化方案已完成，请查看完整方案。',
-    timestamp: new Date(Date.now() - 15 * 60 * 1000),
-    attachments: [
-      { type: 'image', content: 'trend-analysis', label: '2027 春夏系列方向深化方案' },
-    ],
-  },
-]
-
 const state = reactive({
-  agents,
+  agents: [] as Agent[],
   projects,
   activities,
-  chatMessages,
-  selectedAgentId: '1',
+  chatMessages: [] as ChatMessage[],
+  selectedAgentId: '' as string,
   activeNav: 'today' as 'today' | 'agents' | 'projects',
   isAgentResponding: false,
   profileCardOpen: false,
   profileCardFullscreen: false,
-  profileCardAgentId: '1',
+  profileCardAgentId: '' as string,
+  showCreateAgent: false,
+  popupPositions: {} as Record<string, { x: number; y: number; w: number; h: number }>,
+  currentUser: null as { id: string; username: string; email: string | null; avatar: string } | null,
 })
 
 export function useAppStore() {
@@ -235,13 +103,13 @@ export function useAppStore() {
   )
 
   const activeAgents = computed(() =>
-    state.agents.filter(a => a.status === 'working' || a.status === 'waiting')
+    state.agents.filter(a => a.status === 'working' || a.status === 'thinking')
   )
 
   const stats = computed(() => [
     { label: 'Agents Active', value: activeAgents.value.length, icon: 'users', color: 'text-success' },
-    { label: 'Tasks Completed', value: 23, icon: 'check', color: 'text-primary' },
-    { label: 'Decisions Waiting', value: state.agents.filter(a => a.status === 'waiting').length + 3, icon: 'alert', color: 'text-warning' },
+    { label: 'Total Agents', value: state.agents.length, icon: 'check', color: 'text-primary' },
+    { label: 'Decisions Waiting', value: state.agents.filter(a => a.status === 'waiting').length, icon: 'alert', color: 'text-warning' },
   ])
 
   function selectAgent(id: string) {
@@ -252,6 +120,14 @@ export function useAppStore() {
 
   function closeProfileCard() {
     state.profileCardOpen = false
+  }
+
+  function openCreateAgent() {
+    state.showCreateAgent = true
+  }
+
+  function closeCreateAgent() {
+    state.showCreateAgent = false
   }
 
   function toggleProfileFullscreen() {
@@ -279,34 +155,59 @@ export function useAppStore() {
 
     state.isAgentResponding = true
 
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agentId: state.selectedAgentId,
-          message: content,
-        }),
-      })
-      const data = await res.json()
+    const agentMsg: ChatMessage = {
+      id: (Date.now() + 1).toString(),
+      role: 'agent',
+      agentId: state.selectedAgentId,
+      content: '',
+      timestamp: new Date(),
+      streaming: true,
+    }
+    addMessage(agentMsg)
+    const agentIdx = state.chatMessages.length - 1
 
-      const agentMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'agent',
-        agentId: state.selectedAgentId,
-        content: data.reply ?? '抱歉，我暂时无法处理这个请求。',
-        timestamp: new Date(),
+    try {
+      const { sendMessage: apiSendMessage } = await import('@/api')
+      
+      await apiSendMessage(
+        state.selectedAgentId,
+        content,
+        // onDelta
+        (delta) => {
+          if (state.chatMessages[agentIdx].thinking && !state.chatMessages[agentIdx].thinkingDone) {
+            state.chatMessages[agentIdx].thinkingDone = true
+          }
+          state.chatMessages[agentIdx].content += delta
+        },
+        // onThinking
+        (delta) => {
+          if (!state.chatMessages[agentIdx].thinking) {
+            state.chatMessages[agentIdx].thinking = ''
+          }
+          state.chatMessages[agentIdx].thinking += delta
+        },
+        // onDone
+        (fullText) => {
+          if (fullText) {
+            state.chatMessages[agentIdx].content = fullText
+          }
+          state.chatMessages[agentIdx].streaming = false
+          state.chatMessages[agentIdx].thinkingDone = true
+        },
+        // onError
+        (error) => {
+          state.chatMessages[agentIdx].content = error
+          state.chatMessages[agentIdx].streaming = false
+        },
+      )
+
+      if (state.chatMessages[agentIdx].streaming) {
+        state.chatMessages[agentIdx].streaming = false
       }
-      addMessage(agentMsg)
     } catch {
-      const agentMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'agent',
-        agentId: state.selectedAgentId,
-        content: '（后端未连接，请在 server/ 目录启动后端服务以启用 AI 对话）',
-        timestamp: new Date(),
-      }
-      addMessage(agentMsg)
+      state.chatMessages[agentIdx].content =
+        '（后端连接失败，请确保后端服务正在运行）'
+      state.chatMessages[agentIdx].streaming = false
     } finally {
       state.isAgentResponding = false
     }
@@ -321,6 +222,8 @@ export function useAppStore() {
     selectAgent,
     closeProfileCard,
     toggleProfileFullscreen,
+    openCreateAgent,
+    closeCreateAgent,
     setNav,
     sendMessage,
     addMessage,

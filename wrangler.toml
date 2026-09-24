@@ -1,0 +1,29 @@
+# Cloudflare Workers + Static Assets 全栈部署配置
+# 前端 (Vue SPA) + 后端 (Hono API) 统一在一个 Worker 中
+
+name = "nexus-ai"
+main = "server/src/index.ts"
+compatibility_date = "2025-02-04"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 数据库绑定
+[[d1_databases]]
+binding = "DB"
+database_name = "nexus-db"
+database_id = "YOUR_D1_DATABASE_ID"
+
+# Worker 环境变量 (非敏感)
+[vars]
+QWEN_BASE_URL = "https://maas.qianwenaiapi.com/compatible-mode/v1"
+QWEN_MODEL = "qwen3.8-flash"
+CORS_ORIGINS = "*"
+
+# 静态资源 - Vue 前端构建产物
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+# 敏感环境变量 (通过 wrangler secret put 设置)
+# JWT_SECRET=xxx
+# QWEN_API_KEY=xxx
